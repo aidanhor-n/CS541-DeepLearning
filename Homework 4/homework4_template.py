@@ -83,6 +83,7 @@ def train (trainX, trainY, weightsAndBiases, testX, testY):
         # TODO: implement SGD.
         # TODO: save the current set of weights and biases into trajectory; this is
         # useful for visualizing the SGD trajectory.
+        continue
         
     return weightsAndBiases, trajectory
 
@@ -107,6 +108,10 @@ def initWeightsAndBiases ():
     Ws.append(W)
     b = 0.01 * np.ones(NUM_OUTPUT)
     bs.append(b)
+    Ws_flat = [ W.flatten() for W in Ws ]
+    bs_flat = [ b.flatten() for b in bs ]
+    sum_Ws_bs = Ws_flat + bs_flat
+    weightsAndBiases = np.hstack([ W.flatten() for W in Ws ] + [ b.flatten() for b in bs ])
     return np.hstack([ W.flatten() for W in Ws ] + [ b.flatten() for b in bs ])
 
 def plotSGDPath (trainX, trainY, trajectory):
