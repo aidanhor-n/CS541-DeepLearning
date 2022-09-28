@@ -144,15 +144,12 @@ def plotSGDPath (trainX, trainY, trajectory):
 if __name__ == "__main__":
     # TODO: Load data and split into train, validation, test sets
     
-    X_tr = np.reshape(np.load("Homework 4/fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
-    ytr = np.reshape(np.load("Homework 4/fashion_mnist_train_labels.npy"), (-1, 1))
-    X_te = np.reshape(np.load('Homework 4/fashion_mnist_test_images.npy'), (-1, 28 * 28)) / 255
-    y_te = np.reshape(np.load('Homework 4/fashion_mnist_test_labels.npy'), (-1, 1))
+    trainX = np.reshape(np.load("Homework 4/fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
+    trainY = np.reshape(np.load("Homework 4/fashion_mnist_train_labels.npy"), (-1, 1))
+    testX = np.reshape(np.load('Homework 4/fashion_mnist_test_images.npy'), (-1, 28 * 28)) / 255
+    testY = np.reshape(np.load('Homework 4/fashion_mnist_test_labels.npy'), (-1, 1))
 
-    trainX, valX, trainY, valY = train_test_split(X_tr, ytr, test_size=0.2)
-    # trainX = ...
-    # trainY = ...
-    # ...
+    trainX, valX, trainY, valY = train_test_split(trainX, trainY, test_size=0.2)
 
     # Initialize weights and biases randomly
     
