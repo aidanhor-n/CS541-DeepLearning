@@ -9,6 +9,12 @@ NUM_INPUT = 784
 NUM_HIDDEN = 10
 NUM_OUTPUT = 10
 
+# Hyperparamters
+LEARNING_RATE = 0.01
+MINIBATCH_SIZE = 32
+NUM_EPOCHS = 100
+L2_REGULARIZATION_STRENGTH = 0.01
+
 # Unpack a list of weights and biases into their individual np.arrays.
 def unpack (weightsAndBiases):
     # Unpack arguments
@@ -57,8 +63,29 @@ def unpack (weightsAndBiases):
 
     return Ws, bs
 
+def z(X,w,b):
+    # z: pre-activation scores
+    z=X.dot(w) + b
+
+    # normalization
+    normalized = np.exp(z)/np.sum(np.exp(z),axis=1).reshape(-1,1)
+    return normalized
+
+def cross_entropy_loss(X,y,w,b,alpha):
+    w = np.asarray(w)
+    y_hat = np.exp(z(X,w,b)) / sum(np.exp(z(X,w,b)))
+
+    c = []
+    for i in range(X.shape[0]):
+        c.append(np.log(y_hat[i,int(y[i])]))
+
+    ce =- np.mean(c)+alpha/2*np.mean(w.dot(w.T))
+    return ce
+
 def forward_prop (x, y, weightsAndBiases):
     Ws, bs = unpack(weightsAndBiases)
+
+    loss = cross_entropy_loss(x,y,Ws,bs,L2_REGULARIZATION_STRENGTH)
 
     # Return loss, pre-activations, post-activations, and predictions
     return loss, zs, hs, yhat
@@ -78,14 +105,34 @@ def back_prop (x, y, weightsAndBiases):
     return np.hstack([ dJdW.flatten() for dJdW in dJdWs ] + [ dJdb.flatten() for dJdb in dJdbs ]) 
 
 def train (trainX, trainY, weightsAndBiases, testX, testY):
-    NUM_EPOCHS = 100
+    # Hyperparameter tunings
+
     trajectory = []
+    Ws, bs = unpack(weightsAndBiases)
+
     for epoch in range(NUM_EPOCHS):
-        # TODO: implement SGD.
+
+        for batch_index in range(int(trainX.shape[0]/MINIBATCH_SIZE - 1)):
+            
+            start_index = batch_index * MINIBATCH_SIZE
+            end_index = (batch_index + 1) * (MINIBATCH_SIZE) - 1
+
+            X_batch = trainX[start_index: end_index]
+            y_batch = trainY[start_index: end_index]
+
+            grad_Ws = X_batch.T.dot(z(X_batch,Ws,bs) - y_batch)
+            Ws = (1 - L2_REGULARIZATION_STRENGTH * LEARNING_RATE) * Ws - LEARNING_RATE * grad_Ws
+            grad_bs = LEARNING_RATE * (z(X_batch,Ws,bs) - y_batch).mean()
+            if grad_bs < np.inf:
+                bs -= grad_bs        
+        
+
         # TODO: save the current set of weights and biases into trajectory; this is
         # useful for visualizing the SGD trajectory.
         continue
-        
+
+    weightsAndBiases = np.hstack([ W.flatten() for W in Ws ] + [ b.flatten() for b in bs ])
+
     return weightsAndBiases, trajectory
 
 # Performs a standard form of random initialization of weights and biases
