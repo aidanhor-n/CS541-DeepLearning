@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize
-from tensorflow.keras.datasets import fashion_mnist
 from sklearn.model_selection import train_test_split
 
 # For this assignment, assume that every hidden layer has the same number of neurons.
@@ -144,14 +143,13 @@ def plotSGDPath (trainX, trainY, trajectory):
 
 if __name__ == "__main__":
     # TODO: Load data and split into train, validation, test sets
-    (X_train, Y_train), (X_test, Y_test) = fashion_mnist.load_data()
     
-    X_tr = np.reshape(np.load("fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
-    ytr = np.reshape(np.load("fashion_mnist_train_labels.npy"), (-1, 1))
-    X_te = np.reshape(np.load('fashion_mnist_test_images.npy'), (-1, 28 * 28)) / 255
-    y_te = np.reshape(np.load('fashion_mnist_test_labels.npy'), (-1, 1))
+    X_tr = np.reshape(np.load("Homework 4/fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
+    ytr = np.reshape(np.load("Homework 4/fashion_mnist_train_labels.npy"), (-1, 1))
+    X_te = np.reshape(np.load('Homework 4/fashion_mnist_test_images.npy'), (-1, 28 * 28)) / 255
+    y_te = np.reshape(np.load('Homework 4/fashion_mnist_test_labels.npy'), (-1, 1))
 
-    X_train, X_val, y_train, y_val = train_test_split(X_tr, ytr, test_size=0.2)
+    trainX, valX, trainY, valY = train_test_split(X_tr, ytr, test_size=0.2)
     # trainX = ...
     # trainY = ...
     # ...
