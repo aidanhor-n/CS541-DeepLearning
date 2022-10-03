@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
-import scipy.optimize
+from sklearn.decomposition import PCA
+import scipy
 
 # For this assignment, assume that every hidden layer has the same number of neurons.
 NUM_HIDDEN_LAYERS = 3
@@ -98,7 +98,7 @@ def softmax(z):
 def cost(yhat,y):
     Y=enc.inverse_transform(y)
     c=[]
-    Y=Y.astype(np.int)
+    Y=Y.astype(int)
     for i in range(y.shape[0]):
         c.append(np.log(yhat[i, Y[i,0]]))
     ce=-np.mean(c)
@@ -110,7 +110,7 @@ def relu(z):
     return z
 
 
-def forward_prop (x, y, weightsAndBiases):
+def forward_prop (x, y, weightsAndBiases, iteration = 0, printFlag = True):
     Ws, bs = unpack(weightsAndBiases)
     zs, hs = [], []
     h = x
@@ -124,7 +124,8 @@ def forward_prop (x, y, weightsAndBiases):
     yhat = softmax(zhat)
     # print(yhat)
     loss = cost(yhat, y)
-    print("Training Loss:"+str(loss))
+    if printFlag:
+        print(f'{iteration:>5}{"|":*<{int(np.exp(loss))}}')
     # Return loss, pre-activations, post-activations, and predictions
     return loss, zs, hs, yhat
 
@@ -133,8 +134,8 @@ def d_relu(z):
     z[z>0]=1
     z[z<=0]=0
     return z
-def back_prop (x, y, weightsAndBiases):
-    loss, zs, hs, yhat = forward_prop(x, y, weightsAndBiases)
+def back_prop (x, y, weightsAndBiases, iteration = 0):
+    loss, zs, hs, yhat = forward_prop(x, y, weightsAndBiases, iteration)
     Ws,bs=unpack(weightsAndBiases)
 
     dJdWs = []  # Gradients w.r.t. weights
@@ -181,7 +182,7 @@ def update_weights(weightsAndBiases,dJdWs,dJdbs,alpha,lr):
     return weightsAndBiases
 
 def evaluation(X,Y,weightsAndBiases):
-    loss, zs, hs, yhat=forward_prop(X,Y,weightsAndBiases)
+    loss, zs, hs, yhat=forward_prop(X,Y,weightsAndBiases, "FINAL")
     y_pre=argmax(yhat)
     ce=cost(yhat,Y)
     Y=enc.inverse_transform(Y)
@@ -195,14 +196,16 @@ def train(trainX, trainY, weightsAndBiases,lr,mini_batch,alpha,epoch):
     trajectory = []
     iter = int(trainX.shape[0] / mini_batch)
     for epoch in range(NUM_EPOCHS):
+        print(f"\n=== EPOCH {epoch} ===\n")
+        print(f"iter | exp(loss)")
         for j in range(iter):
-            print("Iteration "+str(j)+":")
+            #print(f"Iteration {j}:")
             # print(j)
             # print(mini_batch)
         # TODO: implement SGD.
             Xtr=trainX[j*mini_batch:(j+1)*mini_batch,:]
             ytr=trainY[j*mini_batch:(j+1)*mini_batch,:]
-            dWdb,dJdWs,dJdbs = back_prop(Xtr, ytr, weightsAndBiases)
+            dWdb,dJdWs,dJdbs = back_prop(Xtr, ytr, weightsAndBiases, j)
             weightsAndBiases=update_weights(weightsAndBiases,dJdWs,dJdbs,alpha,lr)
             trajectory.append(weightsAndBiases)
         # TODO: save the current set of weights and biases into trajectory; this is
@@ -213,63 +216,72 @@ def train(trainX, trainY, weightsAndBiases,lr,mini_batch,alpha,epoch):
 
 def plotSGDPath (trainX, trainY, trajectory):
     # TODO: change this toy plot to show a 2-d projection of the weight space
-    # along with the associated loss (cross-entropy), plus a superimposed
+    # along with the associated loss (cross-entropy), plus a superimposed 
     # trajectory across the landscape that was traversed using SGD. Use
     # sklearn.decomposition.PCA's fit_transform and inverse_transform methods.
-    ce,wb=[],[]
-    #surfaceplot
-    # preparing the data
-    print(len(trajectory))
-    for weightsAndBiases in trajectory:
-        loss, _, _, _ = forward_prop(trainX, trainY, weightsAndBiases)
-        ce.append(loss)
-        wb.append(weightsAndBiases)
-    wb=np.asarray(wb)
-    ce=np.asarray(ce).reshape(-1,1)
 
-    # PCA
-    from sklearn.decomposition import PCA
-    pca = PCA(n_components=2)
-    wb=pca.fit_transform(wb)
-    # print(wb.shape)
+    def toyFunction (x1, x2):
+        xy=[x1,x2]
+        xy_inverse=pca.inverse_transform(xy)
+        loss= forward_prop (trainX, trainY, xy_inverse, f"({x1 : .1f},{x2: .1f})")[0]
+        return loss
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    Xaxis, Yaxis = np.meshgrid(wb[:,0], wb[:,1])
-    ax.plot_surface(Xaxis, Yaxis, ce, alpha=0.6)  # Keep alpha < 1 so we can see the scatter plot too.
+    #fig = plt.figure()
+    ax = plt.axes(projection='3d')
 
-    # scatter plot
-    from random import sample
-    trajectory=sample(trajectory,2500)
-    print(len(trajectory))
-    ce,wb=[],[]
-    for weightsAndBiases in trajectory:
-        loss, _, _, _ = forward_prop(trainX, trainY, weightsAndBiases)
-        ce.append(loss)
-        wb.append(weightsAndBiases)
-    wb = np.asarray(wb)
-    ce = np.asarray(ce).reshape(-1, 1)
+    # scaler= StandardScaler()
+    # scaler.fit(trajectory)
+    # ws=scaler.transform(trajectory)
 
-    # PCA
-    from sklearn.decomposition import PCA
-    pca = PCA(n_components=2)
-    wb = pca.fit_transform(wb)
-    # print(wb.shape)
-    ax.scatter(wb[:,0], wb[:,1], ce, color='r')
+    # Performing PCA
+    pca=PCA(n_components=2)
+    xy=pca.fit_transform(trajectory)
 
+    #Creating the mesh grid for surface plot
+    x=xy[:,0]
+    y=xy[:,1]
+    axis1 = np.linspace(np.min(x),np.max(x), 20)
+    axis2 = np.linspace(np.min(y),np.max(y), 20)
+    Xaxis, Yaxis = np.meshgrid(axis1, axis2)
+    Zaxis = np.zeros((len(axis1), len(axis2)))
 
+    print("\n=== Generating Loss Curve ===\n")
+    for i in range(len(axis1)):
+        for j in range(len(axis2)):
+            #Calcualting the Loss Value
+            Zaxis[i,j] = toyFunction(Xaxis[i,j], Yaxis[i,j])
+
+    ax.plot_surface(Xaxis, Yaxis, Zaxis, alpha=0.6)
+
+    # Now superimpose a scatter plot showing the weights during SGD.
+    X=[]
+    Y=[]
+    Z=[]
+    print("\n=== Plotting SGD Trajectory ===\n")
+    for i in range(0,len(x)-1):
+        #Creating 1 point between each epoch
+        num_points = 1
+        tempx=np.linspace(x[i],x[i+1],num_points)
+        tempy=np.linspace(y[i],y[i+1],num_points)
+        for j in range(num_points):
+            X.append(tempx[j])
+            Y.append(tempy[j])
+            #Calculating the Loss value
+            Z.append(toyFunction(tempx[j], tempy[j])) 
+    
+    ax.scatter(X,Y,Z, color='r')
     plt.show()
 
 def split_data():
-    X = np.reshape(np.load("fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
-    y = np.reshape(np.load("fashion_mnist_train_labels.npy"), (-1, 1))
+    X = np.reshape(np.load("Homework 4/fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
+    y = np.reshape(np.load("Homework 4/fashion_mnist_train_labels.npy"), (-1, 1))
     data = np.concatenate((X, y), axis=1)
     np.random.shuffle(data)
     n = int(0.20 * X.shape[0])
     data_tr, data_vali = data[n:, :], data[:n, :]
     return data_tr, data_vali
 
-class parameter:
+class hyperparameter:
     def __init__(self,num_hidden_layer,num_hidden,lr,mini_batch,epoch,alpha):
         self.num_hidden_layer=num_hidden_layer
         self.num_hidden=num_hidden
@@ -281,9 +293,9 @@ class parameter:
 def findBestHyperparameters(trainX, trainY,validX,validY):
     num_hidden_layers=[3,4,5]
     num_hiddens=[30,40]
-    mini_batchs=[20,30]
+    mini_batchs=[64,256]
     learning_rates=[0.001,0.01]
-    epochs=[20,50]
+    epochs=[10,20]
     alphas=[0.001,0.01]
     # num_hidden_layers=[3,4,5]
     # num_hiddens=[40]
@@ -311,7 +323,7 @@ def findBestHyperparameters(trainX, trainY,validX,validY):
                             acc,ce=evaluation(validX,validY,weightsAndBiases)
                             if min_cost == -1 or ce < min_cost:
                                 min_cost = ce
-                                best_parameter=parameter(num_hidden_layer,num_hidden,lr,mini_batch,epoch,alpha)
+                                best_parameter=hyperparameter(num_hidden_layer,num_hidden,lr,mini_batch,epoch,alpha)
                                 # best_wb=weightsAndBiases
     return best_parameter
 if __name__ == "__main__":
@@ -325,27 +337,24 @@ if __name__ == "__main__":
     validY = data_vali[:, -1].reshape(-1, 1)
     validY = enc.fit_transform(validY)
 
-    xtest=np.reshape(np.load("fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
-    ytest = np.reshape(np.load("fashion_mnist_train_labels.npy"), (-1, 1))
+    xtest=np.reshape(np.load("Homework 4/fashion_mnist_train_images.npy"), (-1, 28 * 28)) / 255
+    ytest = np.reshape(np.load("Homework 4/fashion_mnist_train_labels.npy"), (-1, 1))
     ytest = enc.fit_transform(ytest)
 
     # # Initialize weights and biases randomly
     weightsAndBiases = initWeightsAndBiases()
 
     # find best hypterparameters
-    # hyperpara=findBestHyperparameters(trainX,trainY,validX,validY)
-    # print("Best Hypterparameters setting:(num_hidden_layer,num_hidden,lr,mini_batch,epoch,alpha)")
-    # print(hyperpara.num_hidden_layer,hyperpara.num_hidden,hyperpara.lr,hyperpara.mini_batch,hyperpara.epoch,hyperpara.alpha)
+    # hP=findBestHyperparameters(trainX,trainY,validX,validY)
+    # print(f"Best Hypterparameter tuning:\nnum_hidden_layer: {hP.num_hidden_layer}\nnum_hidden: {hP.num_hidden}\nlr: {hP.lr}\nmini_batch: {hP.mini_batch}\nepoch: {hP.epoch}\nalpha: {hP.alpha}")
 
-    # # Perform gradient check on random training examples
-    # print(scipy.optimize.check_grad(lambda wab: forward_prop(np.atleast_2d(trainX[0:5,:]), np.atleast_2d(trainY[0:5,:]), wab)[0], \
-    #                                 lambda wab: back_prop(np.atleast_2d(trainX[0:5,:]), np.atleast_2d(trainY[0:5,:]), wab), \
-    #                                 weightsAndBiases))
+    # Perform gradient check on random training examples
+    #print(scipy.optimize.check_grad(lambda wab: forward_prop(np.atleast_2d(trainX[0:5,:]), np.atleast_2d(trainY[0:5,:]), wab)[0], lambda wab: back_prop(np.atleast_2d(trainX[0:5,:]), np.atleast_2d(trainY[0:5,:]), wab), weightsAndBiases))
 
     # Training and Evaluation
-    weightsAndBiases,trajectory=train(trainX, trainY, weightsAndBiases,mini_batch=20,lr=0.0005,alpha=0.01,epoch=20)
+    weightsAndBiases,trajectory=train(trainX, trainY, weightsAndBiases,mini_batch=16,lr=0.001,alpha=0.01,epoch=10)
     acc,ce=evaluation(xtest,ytest,weightsAndBiases)
-    print(acc)
+    #print(acc)
 
     # Plot the SGD trajectory
-    plotSGDPath(trainX, trainY, trajectory)
+    #plotSGDPath(trainX, trainY, trajectory)
