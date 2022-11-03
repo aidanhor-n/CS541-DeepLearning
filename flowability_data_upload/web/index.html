@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Flowability Data Upload</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+
+
+<body>
+<h1>Flowability Data Upload</h1>
+
+<p></p>
+<!-- <form action=""></form>-->
+<!--        <div class="drop-zone__thumb" data-label="myfile.txt"></div>-->
+    <div class="drop-zone">
+            <span class="drop-zone__prompt">Drop file here or click to upload</span>
+        <input type="file" name="myFile" class="drop-zone__input">
+    </div>
+    <p>
+          <label>Sample Name: </label>
+          <input type = "text"
+                 id = "sample_name"
+                 placeholder="Inconel 718"/>
+    </p>
+    <p>
+          <label>Flowability: </label>
+          <input type = "text" id = "myText" placeholder="31.234"/>
+    </p>
+          <input type="submit" value="Submit">
+
+<h2>Frequently Asked Questions</h2>
+
+<h4>What if there was no flow?</h4>
+
+<p>If the sample did not flow enter the number: 0</p>
+
+    <script src="main.js"></script>
+</body>
+</html>
