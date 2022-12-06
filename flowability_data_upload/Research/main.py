@@ -17,7 +17,7 @@ module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
     
-module_path = module_path + "\\flowability_data_upload\\PSD_TurboSync"
+module_path = module_path + "/flowability_data_upload/PSD_TurboSync"
 
 
 class Data:
@@ -78,8 +78,8 @@ class Data:
         icdd.remove("Id")
         
         datanamelist = os.listdir(module_path)
-        datanamelist.pop(0)
-        flowvaldf = pd.read_excel(module_path + "\\" + datanamelist.pop(0), index_col=9)
+        datanamelist.pop(datanamelist.index('.ipynb_checkpoints'))
+        flowvaldf = pd.read_excel(module_path + "/" + datanamelist.pop(datanamelist.index('AATurboSync_Flowability_HF_Repository.xlsx')), index_col=9)
         #print(datanamelist)
         #print(flowvaldf)
         for i in datanamelist:
@@ -89,7 +89,7 @@ class Data:
        
             #print(module_path)
             #idata = pd.read_csv(i);
-            idata = pd.read_csv(module_path + "\\" + i, sep = '\t', header=(0), skiprows = [1])
+            idata = pd.read_csv(module_path + "/" + i, sep = '\t', header=(0), skiprows = [1], encoding='cp1252')
             #print(idata)
             
             if i[:-4] != "PA_Ni-914-3":
@@ -98,10 +98,8 @@ class Data:
                 if flowval == "No Flow":
                     flowval = 0
                     flowcval = 0
-                elif float(flowval) > 30:
-                    flowcval = 1
                 else:
-                    flowcval = 2
+                    flowcval = 1
                     
             
                 idata["Flow"] = [flowval] * len(idata.index)
@@ -178,11 +176,19 @@ def makemodel(df, y="Flow"):
 
     normalize.adapt(df_features)
 
-    norm_df_model = tf.keras.Sequential([
+    # norm_df_model = tf.keras.Sequential([
+    #     normalize,
+    #     layers.Dense(64),
+    #     layers.Dense(1)
+    # ])
+    norm_df_model = tf.keras.Sequential(
+    [   
         normalize,
-        layers.Dense(64),
-        layers.Dense(1)
-    ])
+        layers.Dense(64, activation="tanh", name="layer1"),
+        layers.Dense(30, activation="tanh", name="layer2"),
+        layers.Dense(1, name="layer3"),
+    ]
+)
 
     norm_df_model.compile(loss=tf.losses.MeanSquaredError(),
                           optimizer=tf.optimizers.Adam())
